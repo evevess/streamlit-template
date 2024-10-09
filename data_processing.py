@@ -2,13 +2,27 @@ import gzip
 import pandas as pd
 import nltk
 from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
 import langid
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from googletrans import Translator
 
+# Download necessary NLTK resources
 nltk.download("stopwords")
+nltk.download("wordnet")
+nltk.download("omw-1.4")
+
+# Initialize lemmatizer and stopwords
+lemmatizer = WordNetLemmatizer()
 english_stopwords = set(stopwords.words("english"))
+
+# Remove apostrophes from stopwords
+english_stopwords = {word.replace("'", "") for word in english_stopwords}
+# Add custom stopwords for common contractions without apostrophes
+custom_stopwords = english_stopwords.union(
+    {"dont", "doesnt", "arent", "cant", "wont", "isnt", "havent", "hasnt", "didnt"}
+)
 
 
 def load_json_data() -> pd.DataFrame:
@@ -36,7 +50,7 @@ def is_probably_english(text):
     if total_words == 0:
         return False
 
-    stopword_count = sum(1 for word in words if word in english_stopwords)
+    stopword_count = sum(1 for word in words if word in custom_stopwords)
     return (stopword_count / total_words) >= 0.2 and stopword_count >= 2
 
 
@@ -68,10 +82,18 @@ def detect_language_parallel(df, batch_size=1000) -> pd.DataFrame:
 
 
 def clean_text(text):
-    text = re.sub(r"[^\w\s]", "", text)
-    text = text.lower()
-    text = " ".join([word for word in text.split() if word not in english_stopwords])
+    # Remove all non-word characters and apostrophes
+    text = re.sub(r"[^\w\s]", "", text).replace("'", "")
+    text = text.lower()  # Convert to lowercase
+    # Filter out stopwords
+    text = " ".join([word for word in text.split() if word not in custom_stopwords])
     return text
+
+
+def lemmatize_words(text):
+    words = text.split()
+    lemmatized_words = [lemmatizer.lemmatize(word) for word in words]
+    return " ".join(lemmatized_words)
 
 
 def translate_to_english(text):
@@ -95,16 +117,23 @@ def data_preprocessing(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def main():
-    df = load_json_data()
-    df = df.sample(10000).reset_index(drop=True)
+def data_processing(df: pd.DataFrame, file_name: str) -> None:
+    df = df.sample(50000).reset_index(drop=True)
     df = detect_language_parallel(df)
     df = data_preprocessing(df)
     df["translated_text"] = df.loc[df["languages"] != "en", "text"].apply(
         translate_to_english
     )
-    df["cleaned_text"] = df["text"].apply(clean_text)
-    df.to_csv("customer_data/processed_data.csv", index=False)
+    df["cleaned_text"] = df["translated_text"].fillna(df["text"]).apply(clean_text)
+    df["lemmatized_text"] = df["cleaned_text"].apply(lemmatize_words)
+    df.to_json(f"customer_data/{file_name}.json", orient="records", lines=False)
+
+
+def main():
+    df = load_json_data()
+    df_negative = df[df["rating"] < 3]
+    data_processing(df, "processed_sample_reviews")
+    data_processing(df_negative, "processed_negative_reviews")
 
 
 if __name__ == "__main__":
