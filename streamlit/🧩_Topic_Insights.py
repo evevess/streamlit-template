@@ -6,7 +6,6 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
 import streamlit as st
 import matplotlib.pyplot as plt
-from wordcloud import WordCloud
 from sklearn.metrics.pairwise import cosine_similarity
 
 df = pd.read_json(
@@ -66,7 +65,6 @@ def extract_key_phrases_tfidf(
 
 def combine_similar_phrases(key_phrases, threshold=0.4):
     phrases, scores = zip(*key_phrases)
-
     vectorizer = TfidfVectorizer().fit_transform(phrases)
     vectors = vectorizer.toarray()
 
@@ -83,21 +81,15 @@ def combine_similar_phrases(key_phrases, threshold=0.4):
         combined_phrases[phrase] = total_score
         for j in range(i + 1, len(phrases)):
             if cosine_sim[i][j] > threshold:
-                if scores[j] > total_score:
-                    breakpoint()
-                    combined_phrases.pop(phrase)
-                    total_score += scores[j]
-                    phrase = phrases[j]
-                    combined_phrases[phrase] = total_score
-                else:
-                    total_score += scores[j]
-                    combined_phrases[phrase] = total_score
+                combined_phrases.pop(phrase)
+                total_score += scores[j]
+                combined_phrases[phrase] = total_score
                 combined_indices.add(j)
 
     return combined_phrases
 
 
-def generate_word_cloud(phrase_frequencies):
+def generate_word_cloud(phrase_frequencies, title):
     wordcloud = WordCloud(
         width=800, height=400, background_color="white"
     ).generate_from_frequencies(phrase_frequencies)
@@ -105,6 +97,7 @@ def generate_word_cloud(phrase_frequencies):
     plt.figure(figsize=(10, 5))
     plt.imshow(wordcloud, interpolation="bilinear")
     plt.axis("off")
+    plt.title(title)
     st.pyplot(plt)
 
 
@@ -116,11 +109,10 @@ def main():
     )
 
     combined_phrases = combine_similar_phrases(key_phrases)
-
-    st.subheader("Word Cloud of Key Phrases")
-    generate_word_cloud(combined_phrases)
-
-    st.title("Key Phrase of All Negative Reviews")
+    header = "Word Cloud of Key Phrases"
+    st.subheader(header)
+    generate_word_cloud(combined_phrases, header)
+    st.title("Key Phrase of Low Rating Reviews")
 
     key_phrases_negative = extract_key_phrases_tfidf(
         df_negative,
@@ -130,7 +122,33 @@ def main():
         ranking=5,
     )
     combined_neg_phrases = combine_similar_phrases(key_phrases_negative)
-    generate_word_cloud(combined_neg_phrases)
+    header = "Word Cloud of Key Phrases for Rating < 3"
+    st.subheader(header)
+    generate_word_cloud(combined_neg_phrases, header)
+
+    st.title("Key Phrase of Top 100 Low Rating Products Reviews")
+    low_rating_counts = (
+        df_negative.groupby("asin")
+        .agg(
+            total_count=("rating", "count"),
+        )
+        .reset_index()
+    )
+    lowest_rated_products = low_rating_counts.sort_values(
+        by="total_count", ascending=False
+    ).head(100)
+    df_lowest_rated = df_negative[df_negative["asin"].isin(lowest_rated_products.asin)]
+    key_phrases_low_rated = extract_key_phrases_tfidf(
+        df_lowest_rated,
+        "cleaned_text",
+        ngram_range=(2, 3),
+        max_features=100,
+        ranking=5,
+    )
+    combined_low_rated_phrases = combine_similar_phrases(key_phrases_low_rated)
+    header = "Word Cloud of Key Phrases for Top 100 Lower Rated Products"
+    st.subheader(header)
+    generate_word_cloud(combined_low_rated_phrases, header)
 
 
 if __name__ == "__main__":

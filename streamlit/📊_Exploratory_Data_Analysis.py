@@ -2,10 +2,14 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 
-st.title("Amazon Reviews EDA with Language Detection & Translation")
+st.title("Amazon Customer Reviews")
 
 df = pd.read_json(
     "customer_data/processed_sample_reviews.json", orient="records", lines=False
+)
+
+df_low_rating = pd.read_json(
+    "customer_data/processed_negative_reviews.json", orient="records", lines=False
 )
 
 st.subheader("Exploratory Data Analysis")
@@ -14,7 +18,7 @@ st.subheader("Exploratory Data Analysis")
 st.write("### Rating Distribution")
 plt.figure(figsize=(12, 8))
 rating_counts = df["rating"].value_counts()
-plt.bar(rating_counts.index, rating_counts.values, color="blue")
+plt.bar(rating_counts.index, rating_counts.values, color="skyblue", edgecolor="black")
 plt.xlabel("Rating")
 plt.ylabel("Count")
 plt.title("Distribution of Ratings")
@@ -62,17 +66,40 @@ df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
 start_time = df["timestamp"].quantile(0.01)
 df = df[df["timestamp"] > start_time]
 plt.figure(figsize=(10, 6))
-df.set_index("timestamp")["rating"].resample("M").mean().plot()
+df.set_index("timestamp")["rating"].resample("ME").mean().plot(
+    kind="line", color="skyblue", marker="o"
+)
 plt.title("Average Rating Over Time")
+plt.xticks(rotation=45)
+plt.grid()
+plt.tight_layout()
+st.pyplot(plt.gcf())
+plt.clf()
+
+# Low Rating Trends over time
+st.write("### Lower Rating Over Time")
+df_low_rating["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
+df_low_rating = df_low_rating[df_low_rating["timestamp"] > start_time]
+rating_counts = df_low_rating.set_index("timestamp").resample("ME").count()["rating"]
+plt.figure(figsize=(10, 6))
+rating_counts.plot(kind="line", color="coral", marker="o")
+plt.title("Number of Ratings Below 3 Stars Over Time")
+plt.xlabel("Time")
+plt.ylabel("Number of Ratings Below 3 Stars")
+plt.xticks(rotation=45)
+plt.grid()
+plt.tight_layout()
 st.pyplot(plt.gcf())
 plt.clf()
 
 # Product Rating
+st.write("### Products With 5-star Ratings")
 average_rating_counts = (
     df.groupby("asin")
     .agg(average_rating=("rating", "mean"), total_count=("rating", "size"))
     .reset_index()
 )
+
 
 highly_rated_products = average_rating_counts[
     (average_rating_counts["average_rating"].round(0) == 5)
@@ -91,7 +118,6 @@ bars = plt.bar(
     color="lightgreen",
     edgecolor="black",
 )
-plt.title("Top Products by Number of 5-Star Ratings")
 plt.xlabel("Product ASIN")
 plt.ylabel("Number of 5-Star Ratings")
 plt.tight_layout()
@@ -112,17 +138,21 @@ for bar in bars:
 st.pyplot(plt.gcf())
 plt.clf()
 
-st.write("### Products with Lowest Ratings (< 3 Stars)")
-# Filter for products with an average rating of 1 star and at least 10 total ratings
-low_rated_products = average_rating_counts[
-    average_rating_counts["average_rating"].round(0) <= 3
-]
+st.write("### Products with Lower Ratings (< 3 Stars)")
 
-lowest_rated_products = low_rated_products.sort_values(
+low_rating_counts = (
+    df_low_rating.groupby("asin")
+    .agg(
+        total_count=("rating", "count"),
+    )
+    .reset_index()
+)
+
+lowest_rated_products = low_rating_counts.sort_values(
     by="total_count", ascending=False
 ).head(25)
 
-
+breakpoint()
 plt.figure(figsize=(12, 6))
 bars = plt.bar(
     lowest_rated_products["asin"],
@@ -130,9 +160,8 @@ bars = plt.bar(
     color="lightcoral",
     edgecolor="black",
 )
-plt.title("Products need improvement (<= 3 Stars)")
 plt.xlabel("Product ASIN")
-plt.ylabel("Number of <= 3-Star Ratings")
+plt.ylabel("Number of Products < 3-Star Ratings")
 plt.xticks(rotation=45)
 for bar in bars:
     yval = bar.get_height()

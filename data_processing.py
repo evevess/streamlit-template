@@ -13,13 +13,9 @@ nltk.download("stopwords")
 nltk.download("wordnet")
 nltk.download("omw-1.4")
 
-# Initialize lemmatizer and stopwords
 lemmatizer = WordNetLemmatizer()
 english_stopwords = set(stopwords.words("english"))
-
-# Remove apostrophes from stopwords
 english_stopwords = {word.replace("'", "") for word in english_stopwords}
-# Add custom stopwords for common contractions without apostrophes
 custom_stopwords = english_stopwords.union(
     {"dont", "doesnt", "arent", "cant", "wont", "isnt", "havent", "hasnt", "didnt"}
 )
@@ -34,10 +30,11 @@ def load_json_data() -> pd.DataFrame:
 
 
 def data_exploration(df: pd.DataFrame, verbose: bool = True) -> None:
-    print(df.describe())
-    print(f"number of null per column: {df.isnull().sum()}")
-    print(f"Unique products (ASIN): {df['asin'].nunique()}")
-    print(f"Verified purchases: {df['verified_purchase'].value_counts()}")
+    if verbose:
+        print(df.describe())
+        print(f"number of null per column: {df.isnull().sum()}")
+        print(f"Unique products (ASIN): {df['asin'].nunique()}")
+        print(f"Verified purchases: {df['verified_purchase'].value_counts()}")
 
 
 def detect_language(batch):
@@ -82,9 +79,8 @@ def detect_language_parallel(df, batch_size=1000) -> pd.DataFrame:
 
 
 def clean_text(text):
-    # Remove all non-word characters and apostrophes
     text = re.sub(r"[^\w\s]", "", text).replace("'", "")
-    text = text.lower()  # Convert to lowercase
+    text = text.lower()
     # Filter out stopwords
     text = " ".join([word for word in text.split() if word not in custom_stopwords])
     return text
@@ -131,6 +127,7 @@ def data_processing(df: pd.DataFrame, file_name: str) -> None:
 
 def main():
     df = load_json_data()
+    data_exploration(df)
     df_negative = df[df["rating"] < 3]
     data_processing(df, "processed_sample_reviews")
     data_processing(df_negative, "processed_negative_reviews")
