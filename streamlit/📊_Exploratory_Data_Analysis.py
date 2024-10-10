@@ -152,7 +152,6 @@ lowest_rated_products = low_rating_counts.sort_values(
     by="total_count", ascending=False
 ).head(25)
 
-breakpoint()
 plt.figure(figsize=(12, 6))
 bars = plt.bar(
     lowest_rated_products["asin"],
