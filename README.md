@@ -1,4 +1,4 @@
-#### Customer Review Analysis & Retrieval-Augmented Generation (RAG) Pipeline
+## Customer Review Analysis & Retrieval-Augmented Generation (RAG) Pipeline
 ## Project Overview
 This project demonstrates a proof-of-concept for analyzing customer review data and building a diagram for Retrieval-Augmented Generation pipeline to generate context-aware, high-quality responses for customer support. 
 
