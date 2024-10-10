@@ -56,3 +56,10 @@ You can use some of the following discussion points as help:
 - Challenges, considerations, and evaluation metrics.
 - Potential improvements and future enhancements for a RAG pipeline.
 - Ethical implications of using GenAI in customer interactions.
+
+  ### - Results
+  1. Data Advisory:
+    The exploratory data analysis (EDA) and topic modeling results are available under the /streamlit directory. To view them, run the page using the command:
+    Streamlit run   streamlit/<file name>.py
+  2. RAG Pipeline:
+    The RAG pipeline diagram is saved as combined_rag_pipeline_diagram. You can regenerate the diagram by executing the RAG_pipeline.py script:
