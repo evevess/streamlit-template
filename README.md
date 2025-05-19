@@ -22,8 +22,12 @@ uv pip install -r pyproject.toml
 
 # Run the Streamlit App
 ```bash
-uv pip install -e .
 streamlit run streamlit/📋 proposal_form_app.py
+```
+
+# Add OneDrive Location
+```bash
+export OneDrive="/path/to/your/OneDrive/folder"
 ```
 
 # Linting & Formatting
