@@ -8,15 +8,16 @@ from azure.storage.blob import BlobServiceClient
 
 import streamlit as st
 
+# Azure Blob Storage config
 AZURE_STORAGE_CONNECTION_STRING = st.secrets["AZURE_STORAGE_CONNECTION_STRING"]
 CONTAINER_NAME = "proposal-submissions"
+FOLDER_NAME = "proposal-requests"
 
 blob_service_client = BlobServiceClient.from_connection_string(
     AZURE_STORAGE_CONNECTION_STRING
 )
 container_client = blob_service_client.get_container_client(CONTAINER_NAME)
 
-# ---- Streamlit UI ----
 st.set_page_config(page_title="📋 Proposal Intake Form", layout="centered")
 st.title("📋 Proposal Request Form")
 
@@ -86,7 +87,11 @@ if submitted:
     }
 
     json_bytes = json.dumps(data, indent=2).encode("utf-8")
-    blob_name = f"{data['client_name'].replace(' ', '_')}_{data['id']}.json"
+
+    # Blob name with folder path prefix (Azure treats this as virtual folder)
+    blob_name = (
+        f"{FOLDER_NAME}/{data['client_name'].replace(' ', '_')}_{data['id']}.json"
+    )
 
     try:
         container_client.upload_blob(name=blob_name, data=json_bytes)
