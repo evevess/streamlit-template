@@ -1,6 +1,37 @@
 {
-    "[python]": {
-      "editor.formatOnSave": true,
-      "editor.defaultFormatter": "charliermarsh.ruff"
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 4,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.ruff": "explicit",
+      "source.organizeImports.ruff": "explicit",
     }
-  }
+  },
+  "[jsonc]": {
+    "editor.tabSize": 4
+  },
+  "editor.tabSize": 2,
+  "editor.formatOnSave": true,
+  "files.eol": "\n",
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/*.egg-info": true,
+    "**/vendor": true,
+    "**/dist": true,
+    "**/build": true,
+    "**/.databricks": true,
+    ".*_cache": true,
+    ".coverage*": true,
+  },
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+  "files.trimTrailingWhitespace": true,
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.extraPaths": [
+    "./src/"
+  ],
+  "python.testing.pytestArgs": [
+    "./tests/unit"
+  ],
+}
